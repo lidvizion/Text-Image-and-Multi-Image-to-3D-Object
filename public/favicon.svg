@@ -1,0 +1,45 @@
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="50%" stop-color="#8b5cf6" />
+      <stop offset="100%" stop-color="#a855f7" />
+    </linearGradient>
+    <linearGradient id="starGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="50%" stop-color="#f8fafc" />
+      <stop offset="100%" stop-color="#e2e8f0" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background rounded rectangle -->
+  <rect 
+    x="10" 
+    y="10" 
+    width="80" 
+    height="80" 
+    rx="20" 
+    ry="20" 
+    fill="url(#bgGradient)"
+  />
+  
+  <!-- Main star shape -->
+  <path
+    d="M50 25 L55 40 L70 40 L58 50 L63 65 L50 55 L37 65 L42 50 L30 40 L45 40 Z"
+    fill="url(#starGradient)"
+  />
+  
+  <!-- Small sparkle - top right -->
+  <circle cx="70" cy="30" r="2" fill="white" />
+  
+  <!-- Small sparkle - bottom left -->
+  <circle cx="30" cy="70" r="1.5" fill="white" />
+  
+  <!-- Plus sign - top left -->
+  <rect x="28" y="25" width="1.5" height="8" fill="white" rx="0.75" />
+  <rect x="24.75" y="28.25" width="8" height="1.5" fill="white" rx="0.75" />
+  
+  <!-- Plus sign - bottom right -->
+  <rect x="70" y="67" width="1.2" height="6" fill="white" rx="0.6" />
+  <rect x="67.4" y="69.4" width="6" height="1.2" fill="white" rx="0.6" />
+</svg>
