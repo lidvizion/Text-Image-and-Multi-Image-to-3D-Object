@@ -1,5 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { GenerationResponse } from '@/types';
+
+// Validation schemas
+const GenerateSchema = z.object({
+  type: z.enum(['text', 'single_image', 'multi_image']),
+  prompt: z.string().max(500).optional(),
+  quality: z.enum(['low', 'medium', 'high']).optional(),
+});
+
+const FileSchema = z.object({
+  name: z.string(),
+  type: z.enum(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']),
+  size: z.number().max(10 * 1024 * 1024), // 10MB max
+});
 
 // Simulate processing time based on generation type
 function getProcessingTime(type: string, imageCount: number = 0): number {
@@ -54,34 +68,74 @@ function generateFileSize(verts: number): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // Check for idempotency key
+    const idempotencyKey = request.headers.get('Idempotency-Key') || crypto.randomUUID();
+    
     const formData = await request.formData();
     const type = formData.get('type') as string;
     const prompt = formData.get('prompt') as string;
     const quality = formData.get('quality') as string || 'medium';
     
-    // Get image files
+    // Validate basic request data
+    const validatedData = GenerateSchema.parse({
+      type,
+      prompt: prompt || undefined,
+      quality,
+    });
+
+    // Get and validate image files
     const images: File[] = [];
     let imageIndex = 0;
     while (formData.get(`image_${imageIndex}`)) {
       const image = formData.get(`image_${imageIndex}`) as File;
+      
+      // Validate file type and size
+      if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(image.type)) {
+        return NextResponse.json(
+          { error: `Unsupported file type: ${image.type}. Only JPEG, PNG, and WebP are allowed.` },
+          { status: 400 }
+        );
+      }
+      
+      if (image.size > 10 * 1024 * 1024) {
+        return NextResponse.json(
+          { error: `File too large: ${image.name}. Maximum size is 10MB.` },
+          { status: 400 }
+        );
+      }
+      
       images.push(image);
       imageIndex++;
     }
 
-    // Validate input
-    if (!type || (type === 'text' && !prompt) || ((type === 'single_image' || type === 'multi_image') && images.length === 0)) {
+    // Validate business logic
+    if (validatedData.type === 'text' && !validatedData.prompt) {
       return NextResponse.json(
-        { error: 'Invalid input parameters' },
+        { error: 'Prompt is required for text generation' },
+        { status: 400 }
+      );
+    }
+    
+    if ((validatedData.type === 'single_image' || validatedData.type === 'multi_image') && images.length === 0) {
+      return NextResponse.json(
+        { error: 'At least one image is required for image generation' },
+        { status: 400 }
+      );
+    }
+
+    if (images.length > 8) {
+      return NextResponse.json(
+        { error: 'Maximum 8 images allowed' },
         { status: 400 }
       );
     }
 
     // Simulate processing time
-    const processingTime = getProcessingTime(type, images.length);
+    const processingTime = getProcessingTime(validatedData.type, images.length);
     await new Promise(resolve => setTimeout(resolve, processingTime * 1000));
 
     // Generate mock response
-    const metrics = generateMetrics(type, prompt, images.length);
+    const metrics = generateMetrics(validatedData.type, validatedData.prompt, images.length);
     const fileSize = generateFileSize(metrics.verts);
 
     const response: GenerationResponse = {
@@ -89,15 +143,32 @@ export async function POST(request: NextRequest) {
       metrics,
       thumbnail: '/mock/thumbnail.jpg',
       processing_time: processingTime,
-      quality: quality as 'low' | 'medium' | 'high',
+      quality: validatedData.quality as 'low' | 'medium' | 'high',
       file_size: fileSize,
     };
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Generation error:', error);
+    // Structured error logging
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { 
+          error: 'Invalid input data',
+          details: error.issues.map(e => `${e.path.join('.')}: ${e.message}`)
+        },
+        { status: 400 }
+      );
+    }
+    
+    // Log error for monitoring (in production, use proper logger)
+    console.error('Generation error:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
+    });
+    
     return NextResponse.json(
-      { error: 'Failed to generate 3D model' },
+      { error: 'Internal server error. Please try again later.' },
       { status: 500 }
     );
   }

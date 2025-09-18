@@ -1,7 +1,8 @@
 import { GenerationRequest, GenerationResponse } from '@/types';
+import { logger } from './logger';
 
 export class APIError extends Error {
-  constructor(message: string, public status?: number) {
+  constructor(message: string, public status?: number, public details?: string[]) {
     super(message);
     this.name = 'APIError';
   }
@@ -27,26 +28,54 @@ export async function generateModel(request: GenerationRequest): Promise<Generat
   }
 
   try {
+    // Add idempotency key for retry safety
+    const idempotencyKey = crypto.randomUUID();
+    
     const response = await fetch('/api/generate', {
       method: 'POST',
+      headers: {
+        'Idempotency-Key': idempotencyKey,
+      },
       body: formData,
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      
+      logger.error('API request failed', {
+        endpoint: '/api/generate',
+        status: response.status,
+        statusText: response.statusText,
+        errorData,
+        requestType: request.type,
+      });
+      
       throw new APIError(
         errorData.error || `HTTP ${response.status}: ${response.statusText}`,
-        response.status
+        response.status,
+        errorData.details
       );
     }
 
-    return await response.json();
+    const result = await response.json();
+    logger.info('API request successful', {
+      endpoint: '/api/generate',
+      requestType: request.type,
+      processingTime: result.processing_time,
+    });
+    
+    return result;
   } catch (error) {
     if (error instanceof APIError) {
       throw error;
     }
     
     // Network or other errors
+    logger.error('Network error during API call', {
+      endpoint: '/api/generate',
+      requestType: request.type,
+    }, error as Error);
+    
     throw new APIError('Failed to connect to the generation service');
   }
 }

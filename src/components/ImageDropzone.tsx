@@ -21,18 +21,48 @@ export default function ImageDropzone({
 }: ImageDropzoneProps) {
   const [dragActive, setDragActive] = useState(false);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const newImages = [...images, ...acceptedFiles].slice(0, maxImages);
+  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
+    // Handle rejected files
+    if (rejectedFiles.length > 0) {
+      const errors = rejectedFiles.map(rejection => 
+        `${rejection.file.name}: ${rejection.errors.map((e: any) => e.message).join(', ')}`
+      );
+      alert(`Some files were rejected:\n${errors.join('\n')}`);
+    }
+
+    // Validate accepted files
+    const validFiles: File[] = [];
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+
+    for (const file of acceptedFiles) {
+      if (!allowedTypes.includes(file.type)) {
+        alert(`Unsupported file type: ${file.name}. Only JPEG, PNG, and WebP are allowed.`);
+        continue;
+      }
+      
+      if (file.size > maxSize) {
+        alert(`File too large: ${file.name}. Maximum size is 10MB.`);
+        continue;
+      }
+      
+      validFiles.push(file);
+    }
+
+    const newImages = [...images, ...validFiles].slice(0, maxImages);
     onImagesChange(newImages);
   }, [images, onImagesChange, maxImages]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/*': ['.jpeg', '.jpg', '.png', '.webp']
+      'image/jpeg': ['.jpeg', '.jpg'],
+      'image/png': ['.png'],
+      'image/webp': ['.webp']
     },
     multiple: true,
     disabled,
+    maxSize: 10 * 1024 * 1024, // 10MB
     onDragEnter: () => setDragActive(true),
     onDragLeave: () => setDragActive(false),
   });
