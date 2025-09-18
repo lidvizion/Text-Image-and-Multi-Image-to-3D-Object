@@ -1,0 +1,13 @@
+{
+  "artifact": "sample_model.glb",
+  "metrics": {
+    "verts": 12450,
+    "faces": 24800,
+    "materials": 3,
+    "textures": 2
+  },
+  "thumbnail": "/mock/thumbnail.jpg",
+  "processing_time": 2.3,
+  "quality": "high",
+  "file_size": "2.4 MB"
+}

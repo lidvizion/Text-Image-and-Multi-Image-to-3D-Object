@@ -1,0 +1,45 @@
+{
+  "name": "AI 3D Generator - Text & Image to 3D",
+  "slug": "text-image-multiimage-to-3d",
+  "task": "3d_gen",
+  "inputs": ["text", "image", "multi_image"],
+  "outputs": ["glb", "thumbnail"],
+  "description": "Generate 3D models from text prompts, single images, or multi-angle images using advanced AI techniques",
+  "version": "1.0.0",
+  "author": "AI 3D Generation Team",
+  "capabilities": {
+    "text_to_3d": {
+      "max_prompt_length": 500,
+      "supported_languages": ["en"],
+      "quality_levels": ["low", "medium", "high"]
+    },
+    "image_to_3d": {
+      "single_image": true,
+      "multi_image": true,
+      "max_images": 8,
+      "supported_formats": ["jpg", "jpeg", "png", "webp"],
+      "max_file_size": "10MB"
+    },
+    "output_formats": {
+      "primary": "glb",
+      "thumbnail": "jpg",
+      "metadata": "json"
+    }
+  },
+  "technical_specs": {
+    "max_vertices": 50000,
+    "max_faces": 100000,
+    "texture_resolution": "1024x1024",
+    "processing_timeout": "300s"
+  },
+  "ui_features": [
+    "prompt_input",
+    "image_dropzone", 
+    "r3f_viewer",
+    "orbit_controls",
+    "wireframe_toggle",
+    "metrics_display",
+    "download_button",
+    "progress_tracking"
+  ]
+}
